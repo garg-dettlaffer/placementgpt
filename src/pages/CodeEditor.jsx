@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Play, Send, RotateCcw, Settings, ArrowLeft, Timer, CheckCircle } from 'lucide-react';
 import { db, auth } from '../services/appwrite';
 import { executeCode } from '../services/codeExecution';
+import { leetcode } from '../services/leetcode';
 import { Query } from 'appwrite';
 import toast from 'react-hot-toast';
 
@@ -20,29 +21,88 @@ export default function CodeEditor() {
   const [executing, setExecuting] = useState(false);
   const [testResults, setTestResults] = useState([]);
   const [activeTab, setActiveTab] = useState('description');
+  const [startTime] = useState(Date.now());
 
   useEffect(() => {
     loadProblem();
+    
+    // Track study time when component unmounts
+    return () => {
+      trackStudyTime();
+    };
   }, [slug]);
+
+  async function trackStudyTime() {
+    try {
+      const timeSpent = Math.floor((Date.now() - startTime) / 1000 / 60); // Convert to minutes
+      if (timeSpent < 1) return; // Don't track if less than 1 minute
+      
+      const currentUser = await auth.getCurrentUser();
+      const progressDocs = await db.listDocuments('progress', [
+        Query.equal('userId', currentUser.$id)
+      ]);
+      
+      if (progressDocs.documents.length > 0) {
+        const progressDoc = progressDocs.documents[0];
+        await db.updateDocument('progress', progressDoc.$id, {
+          studyTime: (progressDoc.studyTime || 0) + timeSpent
+        });
+      }
+    } catch (error) {
+      console.error('Error tracking study time:', error);
+    }
+  }
 
   async function loadProblem() {
     try {
       setLoading(true);
-      const data = await db.getProblem(slug);
-      setProblem(data);
       
-      // Set starter code if available
-      if (data.starterCode) {
-        try {
-          const starterCode = JSON.parse(data.starterCode);
-          setCode(starterCode[language] || '');
-        } catch {
-          setCode('');
+      // Try fetching from Appwrite first
+      try {
+        const data = await db.getProblem(slug);
+        setProblem(data);
+        
+        // Set starter code if available
+        if (data.starterCode) {
+          try {
+            const starterCode = JSON.parse(data.starterCode);
+            setCode(starterCode[language] || '');
+          } catch {
+            setCode('');
+          }
+        }
+        return;
+      } catch (appwriteError) {
+        console.log('Problem not in Appwrite, fetching from LeetCode...');
+        
+        // If not in Appwrite, fetch from LeetCode
+        const lcProblem = await leetcode.fetchProblemDetail(slug);
+        
+        if (lcProblem) {
+          // Transform LeetCode problem to our format
+          setProblem({
+            title: lcProblem.title,
+            difficulty: lcProblem.difficulty,
+            description: lcProblem.content,
+            acceptance: parseFloat(JSON.parse(lcProblem.stats || '{}').acRate || 0),
+            tags: lcProblem.topicTags?.map(t => t.name) || []
+          });
+          
+          // Set starter code from LeetCode
+          const pythonSnippet = lcProblem.codeSnippets?.find(s => s.langSlug === 'python3');
+          if (pythonSnippet) {
+            setCode(pythonSnippet.code);
+          }
+          
+          toast.success('Loaded problem from LeetCode');
+        } else {
+          throw new Error('Problem not found');
         }
       }
     } catch (error) {
       console.error('Error loading problem:', error);
       toast.error('Failed to load problem');
+      
       // Fallback to sample problem
       setProblem({
         title: 'Two Sum',
