@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { motion } from 'framer-motion';
@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 export default function CodeEditor() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const editorRef = useRef(null);
   
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,15 +23,56 @@ export default function CodeEditor() {
   const [testResults, setTestResults] = useState([]);
   const [activeTab, setActiveTab] = useState('description');
   const [startTime] = useState(Date.now());
+  const [theme, setTheme] = useState('vs-dark');
+  const [fontSize, setFontSize] = useState(14);
 
   useEffect(() => {
     loadProblem();
+    loadSavedCode();
+    
+    // Auto-save code every 30 seconds
+    const autoSaveInterval = setInterval(() => {
+      if (code) {
+        localStorage.setItem(`code_${slug}_${language}`, code);
+      }
+    }, 30000);
     
     // Track study time when component unmounts
     return () => {
       trackStudyTime();
+      clearInterval(autoSaveInterval);
+      // Save code on unmount
+      if (code) {
+        localStorage.setItem(`code_${slug}_${language}`, code);
+      }
     };
-  }, [slug]);
+  }, [slug, code, language]);
+
+  function loadSavedCode() {
+    const savedCode = localStorage.getItem(`code_${slug}_${language}`);
+    if (savedCode) {
+      setCode(savedCode);
+      toast.success('Restored your previous code');
+    }
+  }
+
+  function handleEditorDidMount(editor, monaco) {
+    editorRef.current = editor;
+    
+    // Custom keybinding: Cmd/Ctrl + Enter to run code
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+      handleRun();
+    });
+    
+    // Custom keybinding: Cmd/Ctrl + S to submit
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, (e) => {
+      e?.preventDefault();
+      handleSubmit();
+    });
+    
+    // Custom keybinding: Cmd/Ctrl + / for comment toggle (already built-in)
+    // Format document: Shift + Alt + F (already built-in)
+  }
 
   async function trackStudyTime() {
     try {
@@ -429,6 +471,31 @@ export default function CodeEditor() {
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
+              
+              <select
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
+                className="bg-dark-700 border border-dark-600 text-dark-200 text-xs rounded px-2 py-1.5 focus:outline-none"
+                title="Font Size"
+              >
+                <option value={12}>12px</option>
+                <option value={14}>14px</option>
+                <option value={16}>16px</option>
+                <option value={18}>18px</option>
+              </select>
+              
+              <select
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+                className="bg-dark-700 border border-dark-600 text-dark-200 text-xs rounded px-2 py-1.5 focus:outline-none"
+                title="Theme"
+              >
+                <option value="vs-dark">Dark</option>
+                <option value="light">Light</option>
+                <option value="hc-black">High Contrast</option>
+              </select>
+              
+              <span className="text-xs text-dark-500 ml-2">⌘+Enter: Run • ⌘+S: Submit</span>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -449,8 +516,40 @@ export default function CodeEditor() {
             <Editor
               height="100%"
               language={language}
+              theme={theme}
               value={code}
               onChange={(value) => setCode(value || '')}
+              onMount={handleEditorDidMount}
+              options={{
+                fontSize,
+                minimap: { enabled: true },
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+                automaticLayout: true,
+                formatOnPaste: true,
+                formatOnType: true,
+                tabSize: 2,
+                insertSpaces: true,
+                cursorBlinking: 'smooth',
+                cursorSmoothCaretAnimation: 'on',
+                smoothScrolling: true,
+                suggestOnTriggerCharacters: true,
+                acceptSuggestionOnEnter: 'on',
+                quickSuggestions: true,
+                snippetSuggestions: 'inline',
+                bracketPairColorization: { enabled: true },
+                guides: {
+                  indentation: true,
+                  bracketPairs: true
+                },
+                padding: { top: 10, bottom: 10 },
+                lineNumbersMinChars: 3,
+                glyphMargin: true,
+                folding: true,
+                foldingStrategy: 'indentation',
+                showFoldingControls: 'mouseover',
+              }}
+            />
               theme="vs-dark"
               options={{
                 minimap: { enabled: false },

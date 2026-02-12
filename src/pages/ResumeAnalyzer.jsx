@@ -1,11 +1,17 @@
 import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import * as pdfjsLib from 'pdfjs-dist';
 import Navbar from '../components/layout/Navbar';
 import Sidebar from '../components/layout/Sidebar';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { analyzeResume } from '../services/gemini';
 import toast from 'react-hot-toast';
+
+// Set worker path for PDF.js
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+}
 
 export default function ResumeAnalyzer() {
   const [uploaded, setUploaded] = useState(false);
@@ -29,13 +35,38 @@ export default function ResumeAnalyzer() {
   });
 
   const handleFileUpload = async (uploadedFile) => {
+    // Validate file
+    if (!uploadedFile) return;
+    
+    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(uploadedFile.type)) {
+      toast.error('Please upload a PDF, DOC, or DOCX file');
+      return;
+    }
+    
+    if (uploadedFile.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+    
     setFile(uploadedFile);
     setUploaded(true);
     setAnalyzing(true);
     
     try {
-      // Read file content
-      const text = await readFileAsText(uploadedFile);
+      let text = '';
+      
+      // Extract text based on file type
+      if (uploadedFile.type === 'application/pdf') {
+        text = await extractPdfText(uploadedFile);
+      } else {
+        // For DOC/DOCX, use simple text reader (or integrate mammoth.js for better extraction)
+        text = await readFileAsText(uploadedFile);
+      }
+      
+      if (!text || text.trim().length < 50) {
+        throw new Error('Could not extract enough text from the file');
+      }
       
       // Analyze with Gemini
       const result = await analyzeResume(text);
@@ -50,10 +81,19 @@ export default function ResumeAnalyzer() {
         score: 7.2,
         atsScore: 92,
         relevanceScore: 65,
+        brevityScore: 8,
+        missingKeywords: ['React', 'Docker', 'AWS', 'System Design'],
         suggestions: [
-          'Add more specific technical skills',
-          'Quantify your achievements with metrics',
-          'Include action verbs in bullet points'
+          {
+            original: 'Worked on web development projects',
+            improved: 'Developed and deployed 5+ full-stack web applications using React and Node.js, serving 10,000+ users',
+            scoreImpact: '+8 points'
+          },
+          {
+            original: 'Did internship at tech company',
+            improved: 'Software Engineering Intern at Amazon - Optimized database queries reducing latency by 40%',
+            scoreImpact: '+12 points'
+          }
         ],
         strengths: [
           'Clear formatting',
@@ -64,6 +104,28 @@ export default function ResumeAnalyzer() {
       setAnalyzed(true);
     } finally {
       setAnalyzing(false);
+    }
+  };
+
+  const extractPdfText = async (file) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      let fullText = '';
+      
+      // Extract text from all pages
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      
+      return fullText;
+    } catch (error) {
+      console.error('PDF extraction error:', error);
+      throw new Error('Failed to extract text from PDF');
     }
   };
 
