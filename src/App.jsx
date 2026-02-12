@@ -14,6 +14,7 @@ import PrepPlans from './pages/PrepPlans';
 import PrepPlanDetails from './pages/PrepPlanDetails';
 import Problems from './pages/Problems';
 import CodingWorkspace from './pages/CodingWorkspace';
+import CodeEditor from './pages/CodeEditor';
 import MockInterview from './pages/MockInterview';
 import ResumeAnalyzer from './pages/ResumeAnalyzer';
 import Analytics from './pages/Analytics';
@@ -82,6 +83,15 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <CodingWorkspace />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/code/:slug"
+                element={
+                  <ProtectedRoute>
+                    <CodeEditor />
                   </ProtectedRoute>
                 }
               />

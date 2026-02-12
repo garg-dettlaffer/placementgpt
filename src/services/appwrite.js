@@ -91,10 +91,11 @@ export const auth = {
 
   async signInWithGoogle() {
     try {
-      account.createOAuth2Session(
+      // Redirect to Google OAuth - this opens a new window/tab
+      await account.createOAuth2Session(
         'google',
-        `${window.location.origin}/dashboard`,
-        `${window.location.origin}/login`
+        'https://placementgpt-rho.vercel.app/dashboard',
+        'https://placementgpt-rho.vercel.app/login'
       );
     } catch (error) {
       console.error('Google auth error:', error);

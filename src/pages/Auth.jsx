@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, GraduationCap, Building2, Calendar, ArrowRight, Check, X, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { auth as authService } from '../services/appwrite';
 import { COLLEGES, BRANCHES, GRADUATION_YEARS } from '../utils/constants';
 import { isValidEmail, getPasswordStrength } from '../utils/helpers';
 import toast from 'react-hot-toast';
@@ -81,6 +82,17 @@ export default function Auth() {
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  }
+
+  async function handleGoogleSignIn() {
+    try {
+      setLoading(true);
+      await authService.signInWithGoogle();
+      // OAuth will redirect, so no need to navigate here
+    } catch (error) {
+      toast.error('Google sign-in failed. Please try again.');
+      setLoading(false);
+    }
   }
 
   async function handleSubmit(e) {
@@ -500,6 +512,8 @@ export default function Auth() {
               {/* Google Sign In */}
               <button
                 type="button"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
                 className="btn-secondary w-full flex items-center justify-center gap-3"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
