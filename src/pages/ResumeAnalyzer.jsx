@@ -236,12 +236,62 @@ export default function ResumeAnalyzer() {
                   {/* Suggestions */}
                   {analysisResult?.suggestions && (
                     <div className="mb-6">
-                      <h3 className="text-sm font-bold text-dark-900 dark:text-white mb-3">Top Suggestions</h3>
+                      <h3 className="text-sm font-bold text-dark-900 dark:text-white mb-4 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        Improvements
+                      </h3>
+                      <div className="space-y-4">
+                        {Array.isArray(analysisResult.suggestions) && analysisResult.suggestions.map((suggestion, idx) => (
+                          <div key={idx} className={`p-4 rounded-lg border ${
+                            typeof suggestion === 'string'
+                              ? 'border-dark-200 dark:border-dark-700'
+                              : 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10'
+                          }`}>
+                            {typeof suggestion === 'string' ? (
+                              <p className="text-sm text-dark-600 dark:text-dark-400">• {suggestion}</p>
+                            ) : (
+                              <>
+                                <p className="text-sm line-through text-dark-500 mb-2">{suggestion.original}</p>
+                                <p className="text-sm text-green-600 dark:text-green-400 mb-2">✓ {suggestion.improved}</p>
+                                {suggestion.scoreImpact && (
+                                  <span className="inline-block px-2 py-1 bg-green-600 text-white text-xs rounded font-medium">
+                                    {suggestion.scoreImpact}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Missing Keywords */}
+                  {analysisResult?.missingKeywords && analysisResult.missingKeywords.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-sm font-bold text-dark-900 dark:text-white mb-3 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                        Missing Keywords
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {analysisResult.missingKeywords.map((keyword, idx) => (
+                          <span key={idx} className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs font-medium">
+                            {keyword}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Strengths */}
+                  {analysisResult?.strengths && (
+                    <div className="mb-6">
+                      <h3 className="text-sm font-bold text-dark-900 dark:text-white mb-3">Strengths</h3>
                       <ul className="space-y-2">
-                        {analysisResult.suggestions.slice(0, 3).map((suggestion, idx) => (
+                        {analysisResult.strengths.map((strength, idx) => (
                           <li key={idx} className="text-sm text-dark-600 dark:text-dark-400 flex gap-2">
-                            <span className="text-primary-500">•</span>
-                            {suggestion}
+                            <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                            {strength}
                           </li>
                         ))}
                       </ul>
