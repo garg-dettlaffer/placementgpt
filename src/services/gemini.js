@@ -14,6 +14,59 @@ if (API_KEY) {
 }
 
 // ============================================
+// STATEFUL CHAT SESSION
+// ============================================
+
+export const gemini = {
+  chatSession: null,
+  
+  async startChat(systemPrompt) {
+    if (!genAI) {
+      throw new Error('Gemini API not initialized');
+    }
+    
+    const chatModel = genAI.getGenerativeModel({ 
+      model: "gemini-pro",
+      generationConfig: {
+        temperature: 0.7,
+        topP: 1,
+        topK: 40,
+        maxOutputTokens: 2048,
+      }
+    });
+    
+    this.chatSession = chatModel.startChat({
+      history: [
+        {
+          role: "user",
+          parts: [{ text: systemPrompt }]
+        },
+        {
+          role: "model",
+          parts: [{ text: "Understood. I'm ready to help with placement preparation interviews. I'll provide thoughtful questions and constructive feedback." }]
+        }
+      ]
+    });
+    
+    return this.chatSession;
+  },
+  
+  async sendMessage(message) {
+    if (!this.chatSession) {
+      throw new Error('Chat session not started. Call startChat() first.');
+    }
+    
+    const result = await this.chatSession.sendMessage(message);
+    const response = await result.response;
+    return response.text();
+  },
+  
+  clearChat() {
+    this.chatSession = null;
+  }
+};
+
+// ============================================
 // CORE AI FUNCTIONS
 // ============================================
 

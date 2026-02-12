@@ -2,13 +2,13 @@ import { useState } from 'react';
 import Navbar from '../components/layout/Navbar';
 import Sidebar from '../components/layout/Sidebar';
 import { motion } from 'framer-motion';
-import { Mic, Send, Clock } from 'lucide-react';
-import { conductInterview } from '../services/gemini';
+import { Mic, Send, RefreshCcw } from 'lucide-react';
+import { gemini } from '../services/gemini';
 import toast from 'react-hot-toast';
 
 export default function MockInterview() {
   const [messages, setMessages] = useState([
-    { role: 'ai', content: 'Hello! Ready for a mock interview? Let\'s start with a warm-up question.' }
+    { role: 'ai', content: 'Hello! Ready for a mock interview? Click "Start Interview" to begin.' }
   ]);
   const [input, setInput] = useState('');
   const [interviewing, setInterviewing] = useState(false);
@@ -16,8 +16,41 @@ export default function MockInterview() {
   const [interviewType, setInterviewType] = useState('behavioral');
   const [company, setCompany] = useState('Google');
 
+  const startInterview = async () => {
+    setLoading(true);
+    try {
+      const systemPrompt = `You are conducting a ${interviewType} interview for ${company}. 
+${interviewType === 'dsa' ? 'Ask coding questions and evaluate solutions. Start with medium difficulty problems.' : ''}
+${interviewType === 'system_design' ? 'Ask system design questions and guide through architecture. Start with a common scenario.' : ''}
+${interviewType === 'behavioral' ? 'Ask behavioral questions using STAR method. Focus on leadership, teamwork, and problem-solving.' : ''}
+
+Keep responses concise and professional. Provide constructive feedback. Ask follow-up questions based on the candidate's answers.`;
+
+      await gemini.startChat(systemPrompt);
+      setInterviewing(true);
+      
+      // Get first question from AI
+      const firstQuestion = await gemini.sendMessage("Start the interview with an appropriate opening question for this role.");
+      setMessages([{ role: 'ai', content: firstQuestion }]);
+      toast.success('Interview started!');
+    } catch (error) {
+      console.error('Start interview error:', error);
+      toast.error('Failed to start interview. Please try again.');
+      setMessages([{ role: 'ai', content: 'Failed to start interview. Please check your API key and try again.' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetInterview = () => {
+    gemini.clearChat();
+    setInterviewing(false);
+    setMessages([{ role: 'ai', content: 'Interview reset. Click "Start Interview" when you\'re ready to begin again.' }]);
+    toast.success('Interview reset');
+  };
+
   const handleSend = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || !interviewing) return;
     
     const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
@@ -25,15 +58,8 @@ export default function MockInterview() {
     setLoading(true);
 
     try {
-      // Create conversation history for Gemini
-      const conversationHistory = [...messages, userMessage];
-      
-      // Get AI response
-      const aiResponse = await conductInterview(
-        interviewType,
-        company,
-        conversationHistory
-      );
+      // Get AI response using stateful chat
+      const aiResponse = await gemini.sendMessage(input);
       
       setMessages(prev => [...prev, { role: 'ai', content: aiResponse }]);
     } catch (error) {
@@ -62,6 +88,7 @@ export default function MockInterview() {
                   value={interviewType}
                   onChange={(e) => setInterviewType(e.target.value)}
                   className="input-field"
+                  disabled={interviewing}
                 >
                   <option value="behavioral">Behavioral</option>
                   <option value="dsa">DSA</option>
@@ -71,29 +98,32 @@ export default function MockInterview() {
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                   className="input-field"
+                  disabled={interviewing}
                 >
                   <option value="Google">Google</option>
                   <option value="Amazon">Amazon</option>
                   <option value="Microsoft">Microsoft</option>
                   <option value="Meta">Meta</option>
                 </select>
-              </div>
-            </  {loading && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex justify-start"
+                {!interviewing ? (
+                  <button 
+                    onClick={startInterview}
+                    disabled={loading}
+                    className="btn-primary whitespace-nowrap disabled:opacity-50"
                   >
-                    <div className="max-w-xl px-4 py-3 rounded-lg bg-dark-100 dark:bg-dark-700">
-                      <div className="flex gap-2">
-                        <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    </div>
-                  </motion.div>
+                    Start Interview
+                  </button>
+                ) : (
+                  <button 
+                    onClick={resetInterview}
+                    className="btn-secondary whitespace-nowrap"
+                  >
+                    <RefreshCcw className="w-4 h-4 mr-2" />
+                    Reset
+                  </button>
                 )}
-              div>
+              </div>
+            </div>
 
             <div className="card flex-1 flex flex-col overflow-hidden">
               {/* Messages */}
@@ -110,17 +140,28 @@ export default function MockInterview() {
                         msg.role === 'user'
                           ? 'bg-primary-500 text-white'
                           : 'bg-dark-100 dark:bg-dark-700 text-dark-900 dark:text-white'
-                      }`}!loading && handleSend()}
-                    placeholder="Type your answer..."
-                    disabled={loading}
-                    className="input-field flex-1"
-                  />
-                  <button 
-                    onClick={handleSend} 
-                    disabled={loading || !input.trim()}
-                    className="btn-primary px-6 disabled:opacity-50 disabled:cursor-not-allowed"
-                  
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                  </motion.div>
                 ))}
+                
+                {loading && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex justify-start"
+                  >
+                    <div className="max-w-xl px-4 py-3 rounded-lg bg-dark-100 dark:bg-dark-700">
+                      <div className="flex gap-2">
+                        <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
               </div>
 
               {/* Input */}
@@ -130,14 +171,19 @@ export default function MockInterview() {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                    placeholder="Type your answer..."
-                    className="input-field flex-1"
+                    onKeyPress={(e) => e.key === 'Enter' && !loading && interviewing && handleSend()}
+                    placeholder={interviewing ? "Type your answer..." : "Start interview to begin"}
+                    disabled={!interviewing || loading}
+                    className="input-field flex-1 disabled:opacity-50"
                   />
-                  <button onClick={handleSend} className="btn-primary px-6">
+                  <button 
+                    onClick={handleSend} 
+                    disabled={loading || !input.trim() || !interviewing}
+                    className="btn-primary px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <Send className="w-4 h-4" />
                   </button>
-                  <button className="btn-secondary px-6">
+                  <button className="btn-secondary px-6" disabled={!interviewing}>
                     <Mic className="w-4 h-4" />
                   </button>
                 </div>
