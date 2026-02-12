@@ -75,11 +75,11 @@ Keep responses concise and professional. Provide constructive feedback. Ask foll
   };
 
   return (
-    <div className="min-h-screen bg-dark-50 dark:bg-dark-900">
+    <div className="h-screen flex flex-col bg-dark-50 dark:bg-dark-900">
       <Navbar />
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 p-8">
+        <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-4xl mx-auto h-[calc(100vh-80px)] flex flex-col">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold text-dark-900 dark:text-white">Mock Interview</h1>
@@ -171,10 +171,16 @@ Keep responses concise and professional. Provide constructive feedback. Ask foll
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !loading && interviewing && handleSend()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !loading && interviewing && input.trim()) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
                     placeholder={interviewing ? "Type your answer..." : "Start interview to begin"}
                     disabled={!interviewing || loading}
-                    className="input-field flex-1 disabled:opacity-50"
+                    className="input-field flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    autoFocus={interviewing}
                   />
                   <button 
                     onClick={handleSend} 
@@ -190,7 +196,7 @@ Keep responses concise and professional. Provide constructive feedback. Ask foll
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

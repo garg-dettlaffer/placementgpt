@@ -17,11 +17,11 @@ export default function CodingWorkspace() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-50 dark:bg-dark-900">
+    <div className="h-screen flex flex-col bg-dark-50 dark:bg-dark-900">
       <Navbar />
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 p-4">
+        <main className="flex-1 overflow-y-auto p-4">
           <div className="grid lg:grid-cols-2 gap-4 h-[calc(100vh-80px)]">
             {/* Left Panel - Problem */}
             <div className="flex flex-col bg-white dark:bg-dark-800 rounded-lg overflow-hidden">
@@ -100,7 +100,7 @@ Output: []
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

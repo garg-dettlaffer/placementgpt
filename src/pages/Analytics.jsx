@@ -231,11 +231,11 @@ export default function Analytics() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-50 dark:bg-dark-900">
+    <div className="h-screen flex flex-col bg-dark-50 dark:bg-dark-900">
       <Navbar />
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1">
+        <main className="flex-1 overflow-y-auto">
           <div id="analytics-report" className="max-w-7xl mx-auto p-6 lg:p-8">
             {/* Header */}
             <motion.div
@@ -465,7 +465,7 @@ export default function Analytics() {
               </div>
             </motion.div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

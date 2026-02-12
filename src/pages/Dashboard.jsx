@@ -6,8 +6,8 @@ import Navbar from '../components/layout/Navbar';
 import Sidebar from '../components/layout/Sidebar';
 import Footer from '../components/layout/Footer';
 import { useAuth } from '../hooks/useAuth';
-import { auth, db } from '../services/appwrite';
-import { Query } from 'appwrite';
+import { databases, DATABASE_ID, COLLECTIONS, account } from '../services/appwrite';
+import { Query, ID } from 'appwrite';
 import toast from 'react-hot-toast';
 
 const StatsCard = ({ icon: Icon, label, value, trend, onClick }) => (
@@ -42,17 +42,18 @@ export default function Dashboard() {
   async function fetchUserProgress() {
     try {
       setLoading(true);
-      const currentUser = await auth.getCurrentUser();
       
-      if (!currentUser) {
+      if (!user) {
         navigate('/auth');
         return;
       }
 
       // Fetch user progress from Appwrite
-      const progressDocs = await db.listDocuments('progress', [
-        Query.equal('userId', currentUser.$id)
-      ]);
+      const progressDocs = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PROGRESS,
+        [Query.equal('userId', user.$id)]
+      );
 
       if (progressDocs.documents.length > 0) {
         const data = progressDocs.documents[0];
@@ -71,15 +72,20 @@ export default function Dashboard() {
         });
       } else {
         // Create initial progress document
-        await db.createDocument('progress', 'unique()', {
-          userId: currentUser.$id,
-          solvedProblems: '[]',
-          attemptedProblems: '[]',
-          studyTime: 0,
-          streak: 0,
-          totalXP: 0,
-          accuracy: 0
-        });
+        await databases.createDocument(
+          DATABASE_ID,
+          COLLECTIONS.PROGRESS,
+          ID.unique(),
+          {
+            userId: user.$id,
+            solvedProblems: '[]',
+            attemptedProblems: '[]',
+            studyTime: 0,
+            streak: 0,
+            totalXP: 0,
+            accuracy: 0
+          }
+        );
         
         setProgress({
           solvedProblems: 0,
@@ -119,11 +125,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-50 dark:bg-dark-900">
+    <div className="h-screen flex flex-col bg-dark-50 dark:bg-dark-900">
       <Navbar />
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 p-8">
+        <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-7xl mx-auto">
             {/* Welcome Section */}
             <motion.div
@@ -338,7 +344,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

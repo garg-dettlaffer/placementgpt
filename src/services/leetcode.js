@@ -1,3 +1,5 @@
+import { FALLBACK_PROBLEMS } from '../data/fallbackProblems';
+
 const LEETCODE_API = 'https://leetcode.com/graphql';
 
 /**
@@ -72,7 +74,9 @@ export const leetcode = {
       return data.data.problemsetQuestionList.questions;
     } catch (error) {
       console.error('Failed to fetch LeetCode problems:', error);
-      throw error;
+      console.log('Using fallback problem data...');
+      // Return fallback data when API fails (CORS, rate limit, etc.)
+      return FALLBACK_PROBLEMS.slice(skip, skip + limit);
     }
   },
   

@@ -8,11 +8,11 @@ export default function PrepPlanDetails() {
   const [activeTab, setActiveTab] = useState('roadmap');
 
   return (
-    <div className="min-h-screen bg-dark-50 dark:bg-dark-900">
+    <div className="h-screen flex flex-col bg-dark-50 dark:bg-dark-900">
       <Navbar />
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 p-8">
+        <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-4xl font-bold mb-8 text-dark-900 dark:text-white">
               {slug?.toUpperCase()} Preparation Plan
@@ -67,7 +67,7 @@ export default function PrepPlanDetails() {
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

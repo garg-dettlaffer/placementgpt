@@ -65,11 +65,11 @@ export default function Onboarding() {
   const currentStepData = ONBOARDING_STEPS[currentStep - 1];
 
   return (
-    <div className="min-h-screen bg-dark-50 dark:bg-dark-900">
+    <div className="h-screen flex flex-col bg-dark-50 dark:bg-dark-900">
       <Navbar />
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <div className="flex-1 p-8">
+        <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-4xl mx-auto">
             {/* Progress Bar */}
             <div className="mb-12">
@@ -232,7 +232,7 @@ export default function Onboarding() {
               </div>
             </motion.div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );
