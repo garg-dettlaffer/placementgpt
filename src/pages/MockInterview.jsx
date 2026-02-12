@@ -19,6 +19,9 @@ export default function MockInterview() {
   const startInterview = async () => {
     setLoading(true);
     try {
+      // Clear any existing session first
+      gemini.clearChat();
+      
       const systemPrompt = `You are conducting a ${interviewType} interview for ${company}. 
 ${interviewType === 'dsa' ? 'Ask coding questions and evaluate solutions. Start with medium difficulty problems.' : ''}
 ${interviewType === 'system_design' ? 'Ask system design questions and guide through architecture. Start with a common scenario.' : ''}

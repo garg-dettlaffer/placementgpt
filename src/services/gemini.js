@@ -175,6 +175,7 @@ Keep the hint to 2-3 sentences maximum.
  */
 export async function analyzeResume(resumeText, targetRole = 'Software Developer') {
   if (!model) {
+    console.warn('Gemini model not available, using mock data');
     return getMockResumeAnalysis();
   }
 
@@ -186,28 +187,26 @@ Resume content:
 ${resumeText}
 
 Provide a detailed analysis with:
-1. ATS Parsability Score (0-100)
-2. Relevance Score (0-100) 
-3. Missing critical keywords for this role
-4. Formatting issues
-5. 3-5 specific improvement suggestions
-6. Rewritten bullet points that are ATS-friendly
+1. ATS Parsability Score (0-100) - How well can ATS systems read this resume?
+2. Relevance Score (0-100) - How relevant is the content for ${targetRole}?
+3. Brevity Score (1-10) - How concise and well-structured is it?
+4. Missing critical keywords for this role
+5. Specific improvement suggestions
 
-Return as JSON:
+Return ONLY valid JSON (no markdown formatting):
 {
   "atsScore": 75,
   "relevanceScore": 65,
-  "missingKeywords": ["keyword1", "keyword2"],
-  "formattingIssues": ["issue1", "issue2"],
+  "brevityScore": 8,
+  "missingKeywords": ["Docker", "AWS", "Kubernetes"],
   "suggestions": [
     {
-      "category": "Impact",
       "original": "Worked on backend APIs",
-      "improved": "Architected scalable backend microservices handling 10K+ requests",
-      "impact": "+15 score"
+      "improved": "Architected scalable backend microservices handling 10K+ requests using Node.js",
+      "scoreImpact": "+15 points"
     }
   ],
-  "overallFeedback": "Brief summary"
+  "strengths": ["Clear structure", "Quantified achievements"]
 }
     `.trim();
 
@@ -215,19 +214,37 @@ Return as JSON:
     const response = await result.response;
     const text = response.text();
     
+    // Clean any markdown formatting
+    let cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    // Try to parse JSON
+    let parsedData;
     try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        parsedData = JSON.parse(jsonMatch[0]);
+        
+        // Calculate overall score from component scores
+        const overallScore = (
+          (parsedData.atsScore || 70) * 0.4 + 
+          (parsedData.relevanceScore || 60) * 0.4 + 
+          (parsedData.brevityScore || 7) * 10 * 0.2
+        ) / 10;
+        
+        parsedData.score = Math.round(overallScore * 10) / 10;
+        
+        return parsedData;
       }
     } catch (e) {
       console.error('Failed to parse resume analysis JSON:', e);
+      console.log('Raw response:', text);
     }
     
+    console.warn('Using mock resume analysis due to parsing failure');
     return getMockResumeAnalysis();
   } catch (error) {
     console.error('Gemini resume analysis error:', error);
-    return getMockResumeAnalysis();
+    throw error; // Re-throw to let caller handle it
   }
 }
 
@@ -348,28 +365,28 @@ function getMockHint(attemptNumber) {
 
 function getMockResumeAnalysis() {
   return {
+    score: 7.2,
     atsScore: 72,
     relevanceScore: 68,
+    brevityScore: 8,
     missingKeywords: ['AWS', 'Docker', 'System Design', 'Microservices'],
-    formattingIssues: [
-      'Date formats are inconsistent. Use MMM YYYY consistently.',
-      'Avoid tables and complex formatting that confuses ATS.'
-    ],
     suggestions: [
       {
-        category: 'Impact Missing',
         original: 'Worked on backend APIs using Node.js',
         improved: 'Architected scalable backend microservices using Node.js, handling 10K+ daily requests',
-        impact: '+15 Score'
+        scoreImpact: '+15 points'
       },
       {
-        category: 'Missing Keywords',
         original: 'Built web application',
         improved: 'Developed full-stack web application using React, Node.js, and MongoDB with RESTful APIs',
-        impact: '+10 Score'
+        scoreImpact: '+10 points'
       },
     ],
-    overallFeedback: 'Your resume has good content but needs ATS optimization. Add more technical keywords and quantify your achievements with metrics.'
+    strengths: [
+      'Clear formatting and structure',
+      'Good technical terminology',
+      'Relevant experience listed'
+    ]
   };
 }
 

@@ -80,12 +80,18 @@ export default function ResumeAnalyzer() {
       
       // Analyze with Gemini
       const result = await analyzeResume(text);
+      
+      if (!result || !result.atsScore) {
+        throw new Error('Invalid analysis result from AI');
+      }
+      
       setAnalysisResult(result);
       setAnalyzed(true);
       toast.success('Resume analyzed successfully!');
     } catch (error) {
       console.error('Analysis error:', error);
-      toast.error('Failed to analyze resume. Using sample analysis.');
+      const errorMsg = error.message || 'Unknown error';
+      toast.error(`Analysis failed: ${errorMsg}. Using sample data.`);
       // Use mock data as fallback
       setAnalysisResult({
         score: 7.2,

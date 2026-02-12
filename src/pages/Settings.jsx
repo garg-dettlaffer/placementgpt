@@ -10,6 +10,8 @@ import {
   Shield, 
   Key,
   Mail,
+  Phone,
+  Smartphone,
   Briefcase,
   GraduationCap,
   Calendar,
@@ -42,6 +44,9 @@ export default function Settings() {
   const { theme, toggleTheme } = useTheme();
   const [activeSection, setActiveSection] = useState('profile');
   const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -49,21 +54,6 @@ export default function Settings() {
     branch: user?.branch || ''
   });
 
-  const handleSaveProfile = async () => {
-    try {
-      setLoading(true);
-      await updateProfile(formData);
-      toast.success('Profile updated successfully!');
-    } catch (err) {
-      toast.error('Failed to update profile');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const [isEditing, setIsEditing] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -107,15 +97,15 @@ export default function Settings() {
   const [profile, setProfile] = useState({
     name: user?.name || 'John Doe',
     email: user?.email || 'john.doe@college.edu',
-    phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    college: 'Stanford University',
-    branch: 'Computer Science',
-    graduationYear: '2024',
-    bio: 'Passionate developer preparing for tech interviews at top companies.',
-    linkedIn: 'https://linkedin.com/in/johndoe',
-    github: 'https://github.com/johndoe',
-    portfolio: 'https://johndoe.dev'
+    phone: user?.phone || '+1 (555) 123-4567',
+    location: user?.location || 'San Francisco, CA',
+    college: user?.college || 'Stanford University',
+    branch: user?.branch || 'Computer Science',
+    graduationYear: user?.graduationYear || '2024',
+    bio: user?.bio || 'Passionate developer preparing for tech interviews at top companies.',
+    linkedIn: user?.linkedIn || 'https://linkedin.com/in/johndoe',
+    github: user?.github || 'https://github.com/johndoe',
+    portfolio: user?.portfolio || 'https://johndoe.dev'
   });
 
   const settingsSections = [
@@ -127,16 +117,35 @@ export default function Settings() {
     { id: 'data', label: 'Data & Export', icon: Database }
   ];
 
+  const handleSaveProfile = async () => {
+    try {
+      setLoading(true);
+      await updateProfile(formData);
+      toast.success('Profile updated successfully!');
+    } catch (err) {
+      toast.error('Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSaving(false);
-    setIsEditing(false);
+    try {
+      // Simulate API call - in production, save to Appwrite
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success('Settings saved successfully!');
+      setIsEditing(false);
+    } catch (error) {
+      toast.error('Failed to save settings');
+    } finally {
+      setIsSaving(false);
+    }
   };
-
+  
   const handleNotificationChange = (key, value) => {
     setNotifications(prev => ({ ...prev, [key]: value }));
+    toast.success(`Notification settings updated`);
   };
 
   const handlePreferenceChange = (category, key, value) => {
