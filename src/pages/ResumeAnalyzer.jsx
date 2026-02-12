@@ -201,103 +201,114 @@ export default function ResumeAnalyzer() {
                         Analyzing with AI...
                       </p>
                     )}
-                    <button
-                      onClick={handleRemove}
-                      className="btn-secondary mt-4 flex items-center gap-2 mx-auto"
-                    >
-                      <X className="w-4 h-4" />
-                      {analysisResult?.score || 7.2}/10
-                    </div>
-                    <p className="text-dark-600 dark:text-dark-400 mt-2">Overall Score</p>
-                  </div>
-
-                  {/* Metrics */}
-                  <div className="space-y-4 mb-8">
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-sm font-medium text-dark-900 dark:text-white">ATS Parsability</span>
-                        <span className="text-sm font-bold text-primary-600">{analysisResult?.atsScore || 92}%</span>
-                      </div>
-                      <div className="h-2 bg-dark-200 dark:bg-dark-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-green-500" style={{ width: `${analysisResult?.atsScore || 92}%` }} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-sm font-medium text-dark-900 dark:text-white">Relevance</span>
-                        <span className="text-sm font-bold text-orange-600">{analysisResult?.relevanceScore || 65}%</span>
-                      </div>
-                      <div className="h-2 bg-dark-200 dark:bg-dark-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-orange-500" style={{ width: `${analysisResult?.relevanceScore || 65}%` }} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Suggestions */}
-                  {analysisResult?.suggestions && (
-                    <div className="mb-6">
-                      <h3 className="text-sm font-bold text-dark-900 dark:text-white mb-4 flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                        Improvements
-                      </h3>
-                      <div className="space-y-4">
-                        {Array.isArray(analysisResult.suggestions) && analysisResult.suggestions.map((suggestion, idx) => (
-                          <div key={idx} className={`p-4 rounded-lg border ${
-                            typeof suggestion === 'string'
-                              ? 'border-dark-200 dark:border-dark-700'
-                              : 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10'
-                          }`}>
-                            {typeof suggestion === 'string' ? (
-                              <p className="text-sm text-dark-600 dark:text-dark-400">• {suggestion}</p>
-                            ) : (
-                              <>
-                                <p className="text-sm line-through text-dark-500 mb-2">{suggestion.original}</p>
-                                <p className="text-sm text-green-600 dark:text-green-400 mb-2">✓ {suggestion.improved}</p>
-                                {suggestion.scoreImpact && (
-                                  <span className="inline-block px-2 py-1 bg-green-600 text-white text-xs rounded font-medium">
-                                    {suggestion.scoreImpact}
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Missing Keywords */}
-                  {analysisResult?.missingKeywords && analysisResult.missingKeywords.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-sm font-bold text-dark-900 dark:text-white mb-3 flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-red-500" />
-                        Missing Keywords
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {analysisResult.missingKeywords.map((keyword, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs font-medium">
-                            {keyword}
+                    {analysisResult && (
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <button
+                            onClick={handleRemove}
+                            className="text-gray-400 hover:text-white transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                          <span className="text-center">
+                            <div className="text-4xl font-bold text-primary-600">
+                              {analysisResult?.score || 7.2}/10
+                            </div>
+                            <p className="text-sm text-gray-400 mt-1">Overall Score</p>
                           </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                        </div>
 
-                  {/* Strengths */}
-                  {analysisResult?.strengths && (
-                    <div className="mb-6">
-                      <h3 className="text-sm font-bold text-dark-900 dark:text-white mb-3">Strengths</h3>
-                      <ul className="space-y-2">
-                        {analysisResult.strengths.map((strength, idx) => (
-                          <li key={idx} className="text-sm text-dark-600 dark:text-dark-400 flex gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                            {strength}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                </motion.div>
-              )}
+                        {/* Metrics */}
+                        <div className="space-y-4 mb-8">
+                          <div>
+                            <div className="flex justify-between mb-2">
+                              <span className="text-sm font-medium text-dark-900 dark:text-white">ATS Parsability</span>
+                              <span className="text-sm font-bold text-primary-600">{analysisResult?.atsScore || 92}%</span>
+                            </div>
+                            <div className="h-2 bg-dark-200 dark:bg-dark-700 rounded-full overflow-hidden">
+                              <div className="h-full bg-green-500" style={{ width: `${analysisResult?.atsScore || 92}%` }} />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-2">
+                              <span className="text-sm font-medium text-dark-900 dark:text-white">Relevance</span>
+                              <span className="text-sm font-bold text-orange-600">{analysisResult?.relevanceScore || 65}%</span>
+                            </div>
+                            <div className="h-2 bg-dark-200 dark:bg-dark-700 rounded-full overflow-hidden">
+                              <div className="h-full bg-orange-500" style={{ width: `${analysisResult?.relevanceScore || 65}%` }} />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Suggestions */}
+                        {analysisResult?.suggestions && (
+                          <div className="mb-6">
+                            <h3 className="text-sm font-bold text-dark-900 dark:text-white mb-4 flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              Improvements
+                            </h3>
+                            <div className="space-y-4">
+                              {Array.isArray(analysisResult.suggestions) && analysisResult.suggestions.map((suggestion, idx) => (
+                                <div key={idx} className={`p-4 rounded-lg border ${
+                                  typeof suggestion === 'string'
+                                    ? 'border-dark-200 dark:border-dark-700'
+                                    : 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10'
+                                }`}>
+                                  {typeof suggestion === 'string' ? (
+                                    <p className="text-sm text-dark-600 dark:text-dark-400">• {suggestion}</p>
+                                  ) : (
+                                    <>
+                                      <p className="text-sm line-through text-dark-500 mb-2">{suggestion.original}</p>
+                                      <p className="text-sm text-green-600 dark:text-green-400 mb-2">✓ {suggestion.improved}</p>
+                                      {suggestion.scoreImpact && (
+                                        <span className="inline-block px-2 py-1 bg-green-600 text-white text-xs rounded font-medium">
+                                          {suggestion.scoreImpact}
+                                        </span>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Missing Keywords */}
+                        {analysisResult?.missingKeywords && analysisResult.missingKeywords.length > 0 && (
+                          <div className="mb-6">
+                            <h3 className="text-sm font-bold text-dark-900 dark:text-white mb-3 flex items-center gap-2">
+                              <AlertCircle className="w-4 h-4 text-red-500" />
+                              Missing Keywords
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                              {analysisResult.missingKeywords.map((keyword, idx) => (
+                                <span key={idx} className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs font-medium">
+                                  {keyword}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Strengths */}
+                        {analysisResult?.strengths && (
+                          <div className="mb-6">
+                            <h3 className="text-sm font-bold text-dark-900 dark:text-white mb-3">Strengths</h3>
+                            <ul className="space-y-2">
+                              {analysisResult.strengths.map((strength, idx) => (
+                                <li key={idx} className="text-sm text-dark-600 dark:text-dark-400 flex gap-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                                  {strength}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

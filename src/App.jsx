@@ -19,6 +19,10 @@ import MockInterview from './pages/MockInterview';
 import ResumeAnalyzer from './pages/ResumeAnalyzer';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import Leaderboard from './pages/Leaderboard';
+import Notifications from './pages/Notifications';
+import Profile from './pages/Profile';
+import Achievements from './pages/Achievements';
 
 function App() {
   return (
@@ -128,6 +132,38 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Settings />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/leaderboard"
+                element={
+                  <ProtectedRoute>
+                    <Leaderboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <Notifications />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/profile/:username"
+                element={<Profile />}
+              />
+
+              <Route
+                path="/achievements"
+                element={
+                  <ProtectedRoute>
+                    <Achievements />
                   </ProtectedRoute>
                 }
               />
