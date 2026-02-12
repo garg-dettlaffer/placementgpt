@@ -21,8 +21,8 @@ export const gemini = {
   chatSession: null,
   
   async startChat(systemPrompt) {
-    if (!genAI) {
-      throw new Error('Gemini API not initialized');
+    if (!genAI || !API_KEY) {
+      throw new Error('Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
     }
     
     const chatModel = genAI.getGenerativeModel({ 
@@ -56,9 +56,21 @@ export const gemini = {
       throw new Error('Chat session not started. Call startChat() first.');
     }
     
-    const result = await this.chatSession.sendMessage(message);
-    const response = await result.response;
-    return response.text();
+    if (!genAI || !API_KEY) {
+      throw new Error('Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
+    }
+    
+    try {
+      const result = await this.chatSession.sendMessage(message);
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      if (error.message?.includes('API_KEY_INVALID')) {
+        throw new Error('Invalid Gemini API key. Please check your .env file.');
+      }
+      throw error;
+    }
   },
   
   clearChat() {

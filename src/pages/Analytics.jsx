@@ -85,6 +85,20 @@ export default function Analytics() {
 
           // Generate company readiness
           generateCompanyReadiness(parsedProgress);
+        } else {
+          // No progress data yet - use empty state
+          setUserProgress({
+            solvedProblems: [],
+            attemptedProblems: [],
+            topicStats: {},
+            studyTime: 0,
+            streak: 0,
+            totalXP: 0
+          });
+          setProgressData([]);
+          setTopicStats([]);
+          setActivityHeatmap([]);
+          setCompanyReadiness([]);
         }
       } catch (error) {
         console.error('Error fetching analytics:', error);
@@ -270,7 +284,31 @@ export default function Analytics() {
               </div>
             </motion.div>
 
+            {/* Empty State */}
+            {(!userProgress || userProgress.solvedProblems.length === 0) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="card p-12 text-center"
+              >
+                <div className="w-20 h-20 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <TrendingUp className="w-10 h-10 text-primary-600 dark:text-primary-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">Start Your Journey</h3>
+                <p className="text-gray-400 mb-6 max-w-md mx-auto">
+                  Solve your first problem to see detailed analytics and track your progress towards your dream placement!
+                </p>
+                <button
+                  onClick={() => window.location.href = '/problems'}
+                  className="btn-primary"
+                >
+                  Browse Problems
+                </button>
+              </motion.div>
+            )}
+
             {/* Stats Overview */}
+            {userProgress && userProgress.solvedProblems.length > 0 && (
             <div className="grid md:grid-cols-4 gap-6 mb-8">
               {[
                 {
@@ -322,8 +360,10 @@ export default function Analytics() {
                 </motion.div>
               ))}
             </div>
+            )}
 
             {/* Charts Grid */}
+            {userProgress && userProgress.solvedProblems.length > 0 && (
             <div className="grid lg:grid-cols-2 gap-8 mb-8">
               {/* Progress Over Time */}
               <motion.div
@@ -387,8 +427,10 @@ export default function Analytics() {
                 </ResponsiveContainer>
               </motion.div>
             </div>
+            )}
 
             {/* Company Readiness Radar */}
+            {userProgress && userProgress.solvedProblems.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -423,8 +465,10 @@ export default function Analytics() {
                 </ResponsiveContainer>
               </div>
             </motion.div>
+            )}
 
             {/* Activity Heatmap */}
+            {userProgress && userProgress.solvedProblems.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -464,6 +508,7 @@ export default function Analytics() {
                 <span>More</span>
               </div>
             </motion.div>
+            )}
           </div>
         </main>
       </div>

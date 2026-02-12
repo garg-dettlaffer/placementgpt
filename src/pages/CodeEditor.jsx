@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { motion } from 'framer-motion';
 import { Play, Send, RotateCcw, Settings, ArrowLeft, Timer, CheckCircle } from 'lucide-react';
-import { db, auth } from '../services/appwrite';
+import { databases, DATABASE_ID, COLLECTIONS, account } from '../services/appwrite';
 import { executeCode } from '../services/codeExecution';
 import { leetcode } from '../services/leetcode';
 import { Query } from 'appwrite';
@@ -79,16 +79,21 @@ export default function CodeEditor() {
       const timeSpent = Math.floor((Date.now() - startTime) / 1000 / 60); // Convert to minutes
       if (timeSpent < 1) return; // Don't track if less than 1 minute
       
-      const currentUser = await auth.getCurrentUser();
-      const progressDocs = await db.listDocuments('progress', [
-        Query.equal('userId', currentUser.$id)
-      ]);
+      const currentUser = await account.get();
+      const progressDocs = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.PROGRESS,
+        [Query.equal('userId', currentUser.$id)]
+      );
       
       if (progressDocs.documents.length > 0) {
         const progressDoc = progressDocs.documents[0];
-        await db.updateDocument('progress', progressDoc.$id, {
-          studyTime: (progressDoc.studyTime || 0) + timeSpent
-        });
+        await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.PROGRESS,
+          progressDoc.$id,
+          { studyTime: (progressDoc.studyTime || 0) + timeSpent }
+        );
       }
     } catch (error) {
       console.error('Error tracking study time:', error);
@@ -548,16 +553,6 @@ export default function CodeEditor() {
                 folding: true,
                 foldingStrategy: 'indentation',
                 showFoldingControls: 'mouseover',
-              }}
-            />
-              theme="vs-dark"
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                lineNumbers: 'on',
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                tabSize: 4,
               }}
             />
           </div>

@@ -68,6 +68,16 @@ export default function ResumeAnalyzer() {
         throw new Error('Could not extract enough text from the file');
       }
       
+      // Validate if content looks like a resume
+      const lowerText = text.toLowerCase();
+      const resumeKeywords = ['experience', 'education', 'skills', 'work', 'project', 'university', 'college', 'intern', 'job', 'position'];
+      const keywordMatches = resumeKeywords.filter(keyword => lowerText.includes(keyword)).length;
+      
+      if (keywordMatches < 2) {
+        toast.error('⚠️ This doesn\'t appear to be a resume. Please upload your actual resume.');
+        throw new Error('File content does not match resume format');
+      }
+      
       // Analyze with Gemini
       const result = await analyzeResume(text);
       setAnalysisResult(result);
