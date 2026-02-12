@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
-import { auth as authService, db } from '../services/pocketbase';
+import { auth as authService, db } from '../services/appwrite';
 import toast from 'react-hot-toast';
 
 export const AuthContext = createContext(null);
@@ -16,11 +16,11 @@ export function AuthProvider({ children }) {
 
   async function checkAuth() {
     try {
-      const currentUser = authService.getCurrentUser();
+      const currentUser = await authService.getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
         setIsAuthenticated(true);
-        await loadUserProgress(currentUser.id);
+        await loadUserProgress(currentUser.$id);
       }
     } catch (error) {
       console.error('Auth check error:', error);
@@ -30,29 +30,29 @@ export function AuthProvider({ children }) {
   }
 
   async function loadUserProgress(userId) {
-    const { progress: userProgress } = await db.getProgress(userId);
-    if (userProgress) {
-      setProgress(userProgress);
+    try {
+      const userProgress = await db.getProgress(userId);
+      if (userProgress) {
+        setProgress(userProgress);
+      }
+    } catch (error) {
+      console.error('Load progress error:', error);
     }
   }
 
   async function signUp(email, password, name, college, branch, graduationYear) {
     setLoading(true);
     try {
-      const { user: newUser, error } = await authService.signUp(
+      const newUser = await authService.signUp(
         email, password, name, college, branch, graduationYear
       );
-      if (error) {
-        toast.error(error);
-        return { success: false, error };
-      }
       setUser(newUser);
       setIsAuthenticated(true);
-      await loadUserProgress(newUser.id);
+      await loadUserProgress(newUser.$id);
       toast.success('Account created successfully!');
       return { success: true, user: newUser };
     } catch (error) {
-      toast.error('Signup failed');
+      toast.error(error.message || 'Signup failed');
       return { success: false, error: error.message };
     } finally {
       setLoading(false);
@@ -62,45 +62,42 @@ export function AuthProvider({ children }) {
   async function signIn(email, password) {
     setLoading(true);
     try {
-      const { user: authUser, error } = await authService.signIn(email, password);
-      if (error) {
-        toast.error(error);
-        return { success: false, error };
-      }
+      await authService.signIn(email, password);
+      const authUser = await authService.getCurrentUser();
       setUser(authUser);
       setIsAuthenticated(true);
-      await loadUserProgress(authUser.id);
+      await loadUserProgress(authUser.$id);
       toast.success('Welcome back!');
       return { success: true, user: authUser };
     } catch (error) {
-      toast.error('Login failed');
+      toast.error(error.message || 'Login failed');
       return { success: false, error: error.message };
     } finally {
       setLoading(false);
     }
   }
 
-  function signOut() {
-    authService.signOut();
-    setUser(null);
-    setProgress(null);
-    setIsAuthenticated(false);
-    toast.success('Signed out successfully');
+  async function signOut() {
+    try {
+      await authService.signOut();
+      setUser(null);
+      setProgress(null);
+      setIsAuthenticated(false);
+      toast.success('Signed out successfully');
+    } catch (error) {
+      toast.error('Sign out failed');
+    }
   }
 
   async function updateProfile(data) {
     if (!user) return { success: false };
     try {
-      const { user: updated, error } = await authService.updateProfile(user.id, data);
-      if (error) {
-        toast.error(error);
-        return { success: false, error };
-      }
+      const updated = await authService.updateProfile(data);
       setUser(updated);
       toast.success('Profile updated!');
       return { success: true, user: updated };
     } catch (error) {
-      toast.error('Update failed');
+      toast.error(error.message || 'Update failed');
       return { success: false, error: error.message };
     }
   }
@@ -108,12 +105,11 @@ export function AuthProvider({ children }) {
   async function updateProgress(data) {
     if (!user) return { success: false };
     try {
-      const { progress: updated, error } = await db.updateProgress(user.id, data);
-      if (error) throw new Error(error);
+      const updated = await db.updateProgress(user.$id, data);
       setProgress(updated);
       return { success: true, progress: updated };
     } catch (error) {
-      console.error('Progress update error:', error);
+      toast.error('Progress update failed');
       return { success: false, error: error.message };
     }
   }
@@ -128,7 +124,7 @@ export function AuthProvider({ children }) {
     signOut,
     updateProfile,
     updateProgress,
-    refreshProgress: () => user && loadUserProgress(user.id),
+    refreshProgress: () => user && loadUserProgress(user.$id),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

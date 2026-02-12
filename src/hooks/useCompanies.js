@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { db } from '../services/pocketbase';
+import { db } from '../services/appwrite';
 
 export function useCompanies(initialFilters = {}) {
   const [companies, setCompanies] = useState([]);
