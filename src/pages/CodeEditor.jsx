@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { motion } from 'framer-motion';
 import { Play, Send, RotateCcw, Settings, ArrowLeft, Timer, CheckCircle } from 'lucide-react';
-import { db } from '../services/appwrite';
+import { db, auth } from '../services/appwrite';
 import { executeCode } from '../services/codeExecution';
+import { Query } from 'appwrite';
 import toast from 'react-hot-toast';
 
 export default function CodeEditor() {
@@ -88,8 +89,85 @@ export default function CodeEditor() {
   }
 
   async function handleSubmit() {
-    toast.success('Submitted successfully!');
-    // TODO: Implement submission logic
+    if (!code.trim()) {
+      toast.error('Please write some code first');
+      return;
+    }
+
+    setExecuting(true);
+    try {
+      // Run code to check if it works
+      const result = await executeCode(language, code);
+      
+      // Check if execution was successful (no errors)
+      const isSuccess = result.run && !result.run.stderr;
+      
+      if (isSuccess) {
+        // Update user progress in Appwrite
+        const currentUser = await auth.getCurrentUser();
+        const progressDocs = await db.listDocuments('progress', [
+          Query.equal('userId', currentUser.$id)
+        ]);
+        
+        if (progressDocs.documents.length > 0) {
+          const progressDoc = progressDocs.documents[0];
+          const solvedProblems = JSON.parse(progressDoc.solvedProblems || '[]');
+          const attemptedProblems = JSON.parse(progressDoc.attemptedProblems || '[]');
+          
+          // Add to attempted if not already there
+          if (!attemptedProblems.includes(slug)) {
+            attemptedProblems.push(slug);
+          }
+          
+          // Add to solved if not already there
+          if (!solvedProblems.includes(slug)) {
+            solvedProblems.push(slug);
+            
+            // Update progress document
+            await db.updateDocument('progress', progressDoc.$id, {
+              solvedProblems: JSON.stringify(solvedProblems),
+              attemptedProblems: JSON.stringify(attemptedProblems),
+              totalXP: (progressDoc.totalXP || 0) + 10,
+              accuracy: Math.round((solvedProblems.length / attemptedProblems.length) * 100)
+            });
+            
+            toast.success('🎉 Problem solved! +10 XP');
+          } else {
+            toast.success('✅ Code executed successfully!');
+          }
+        }
+      } else {
+        // Mark as attempted but not solved
+        const currentUser = await auth.getCurrentUser();
+        const progressDocs = await db.listDocuments('progress', [
+          Query.equal('userId', currentUser.$id)
+        ]);
+        
+        if (progressDocs.documents.length > 0) {
+          const progressDoc = progressDocs.documents[0];
+          const attemptedProblems = JSON.parse(progressDoc.attemptedProblems || '[]');
+          
+          if (!attemptedProblems.includes(slug)) {
+            attemptedProblems.push(slug);
+            const solvedProblems = JSON.parse(progressDoc.solvedProblems || '[]');
+            
+            await db.updateDocument('progress', progressDoc.$id, {
+              attemptedProblems: JSON.stringify(attemptedProblems),
+              accuracy: attemptedProblems.length > 0 
+                ? Math.round((solvedProblems.length / attemptedProblems.length) * 100)
+                : 0
+            });
+          }
+        }
+        
+        toast.error('Code has errors. Keep trying!');
+      }
+    } catch (error) {
+      console.error('Submission error:', error);
+      toast.error('Failed to submit. Please try again.');
+    } finally {
+      setExecuting(false);
+    }
   }
 
   function handleReset() {

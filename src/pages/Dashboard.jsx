@@ -6,6 +6,9 @@ import Navbar from '../components/layout/Navbar';
 import Sidebar from '../components/layout/Sidebar';
 import Footer from '../components/layout/Footer';
 import { useAuth } from '../hooks/useAuth';
+import { auth, db } from '../services/appwrite';
+import { Query } from 'appwrite';
+import toast from 'react-hot-toast';
 
 const StatsCard = ({ icon: Icon, label, value, trend, onClick }) => (
   <motion.div
@@ -33,19 +36,76 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading user progress
-    setTimeout(() => {
-      setProgress({
-        solvedProblems: 47,
-        totalProblems: 500,
-        accuracy: 78,
-        studyTimeThisMonth: 152,
-        streak: 12,
-        totalXP: 4250
-      });
-      setLoading(false);
-    }, 1000);
+    fetchUserProgress();
   }, []);
+
+  async function fetchUserProgress() {
+    try {
+      setLoading(true);
+      const currentUser = await auth.getCurrentUser();
+      
+      if (!currentUser) {
+        navigate('/auth');
+        return;
+      }
+
+      // Fetch user progress from Appwrite
+      const progressDocs = await db.listDocuments('progress', [
+        Query.equal('userId', currentUser.$id)
+      ]);
+
+      if (progressDocs.documents.length > 0) {
+        const data = progressDocs.documents[0];
+        const solvedProblems = JSON.parse(data.solvedProblems || '[]');
+        const attemptedProblems = JSON.parse(data.attemptedProblems || '[]');
+        
+        setProgress({
+          solvedProblems: solvedProblems.length,
+          totalProblems: 500, // Total available problems
+          accuracy: attemptedProblems.length > 0 
+            ? Math.round((solvedProblems.length / attemptedProblems.length) * 100)
+            : 0,
+          studyTimeThisMonth: Math.round((data.studyTime || 0) / 60), // Convert to hours
+          streak: data.streak || 0,
+          totalXP: data.totalXP || 0
+        });
+      } else {
+        // Create initial progress document
+        await db.createDocument('progress', 'unique()', {
+          userId: currentUser.$id,
+          solvedProblems: '[]',
+          attemptedProblems: '[]',
+          studyTime: 0,
+          streak: 0,
+          totalXP: 0,
+          accuracy: 0
+        });
+        
+        setProgress({
+          solvedProblems: 0,
+          totalProblems: 500,
+          accuracy: 0,
+          studyTimeThisMonth: 0,
+          streak: 0,
+          totalXP: 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching progress:', error);
+      toast.error('Failed to load progress data');
+      // Set default values on error
+      setProgress({
+        solvedProblems: 0,
+        totalProblems: 500,
+        accuracy: 0,
+        studyTimeThisMonth: 0,
+        streak: 0,
+        totalXP: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (loading) {
     return (
