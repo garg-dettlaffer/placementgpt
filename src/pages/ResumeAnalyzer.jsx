@@ -296,31 +296,6 @@ export default function ResumeAnalyzer() {
                         ))}
                       </ul>
                     </div>
-                  )}trics */}
-                  <div className="space-y-4 mb-8">
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-sm font-medium text-dark-900 dark:text-white">ATS Parsability</span>
-                        <span className="text-sm font-bold text-primary-600">92%</span>
-                      </div>
-                      <div className="h-2 bg-dark-200 dark:bg-dark-700 rounded-full overflow-hidden">
-                        <div className="h-full w-[92%] bg-green-500" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-sm font-medium text-dark-900 dark:text-white">Relevance</span>
-                        <span className="text-sm font-bold text-orange-600">65%</span>
-                      </div>
-                      <div className="h-2 bg-dark-200 dark:bg-dark-700 rounded-full overflow-hidden">
-                        <div className="h-full w-[65%] bg-orange-500" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <button className="btn-primary w-full">
-                    Generate Optimized Resume
-                  </button>
                 </motion.div>
               )}
             </div>
